@@ -5,8 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ShieldCheck, Mail, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const SuperAdminLogin: React.FC = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
@@ -23,11 +25,23 @@ const SuperAdminLogin: React.FC = () => {
       return;
     }
 
+    // Dev Bypass for requested superadmin
+    const bypassEmails = ['vipulpatil@gmail.com', 'superadmin@example.com', 'darshan@gmail.com', 'darshanpatil@example.com'];
+    if (bypassEmails.includes(email)) {
+      let name = 'Vipul Patil';
+      if (email === 'superadmin@example.com') name = 'Default Super Admin';
+      if (email === 'darshan@gmail.com' || email === 'darshanpatil@example.com') name = 'Darshan Patil';
+      
+      setOtpSent(true);
+      setSuccessMessage(`Dev mode: Access code requested for ${name}.`);
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
     try {
-      const response = await fetch('https://staffly.space/super-admin/send-otp', {
+      const response = await fetch('https://testing.staffly.space/super-admin/send-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -57,11 +71,39 @@ const SuperAdminLogin: React.FC = () => {
       return;
     }
 
+    // Dev Bypass for requested superadmin
+    const bypassEmails = ['vipulpatil@gmail.com', 'superadmin@example.com', 'darshan@gmail.com', 'darshanpatil@example.com'];
+    if (bypassEmails.includes(email) && otp === '123456') {
+      let name = 'Vipul Patil';
+      let adminId = 1;
+      
+      if (email === 'superadmin@example.com') {
+        name = 'Default Super Admin';
+        adminId = 1;
+      } else if (email === 'darshan@gmail.com' || email === 'darshanpatil@example.com') {
+        name = 'Darshan Patil';
+        adminId = 5;
+      }
+      
+      const mockUser = {
+        access_token: "dev_bypass_token",
+        email: email,
+        name: name,
+        super_admin_id: adminId,
+        is_active: true
+      };
+      localStorage.setItem('access_token', mockUser.access_token);
+      localStorage.setItem('user', JSON.stringify(mockUser));
+      login(mockUser);
+      navigate('/');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
     try {
-      const response = await fetch('https://staffly.space/super-admin/verify-otp', {
+      const response = await fetch('https://testing.staffly.space/super-admin/verify-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -75,6 +117,7 @@ const SuperAdminLogin: React.FC = () => {
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('user', JSON.stringify(data));
         login(data);
+        navigate('/');
       } else {
         setError(data.message || data.detail || 'Failed to verify OTP. Please try again.');
       }
@@ -108,7 +151,7 @@ const SuperAdminLogin: React.FC = () => {
               {otpSent ? 'Enter OTP' : 'Welcome back'}
             </CardTitle>
             <CardDescription className="text-center">
-              {otpSent 
+              {otpSent
                 ? `We've sent a code to ${email}`
                 : 'Enter your email to receive a one-time password'
               }
@@ -124,7 +167,7 @@ const SuperAdminLogin: React.FC = () => {
                     <Input
                       id="email"
                       type="email"
-                      placeholder="admin@staffly.space"
+                      placeholder="admin@testing.staffly.space"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-10 h-12 bg-slate-50 border-slate-200 focus-visible:ring-orange-500 rounded-xl"
@@ -137,8 +180,8 @@ const SuperAdminLogin: React.FC = () => {
                   <p className="text-sm text-red-500 font-medium bg-red-50 p-3 rounded-lg">{error}</p>
                 )}
 
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-md"
                   disabled={isLoading}
                 >
@@ -149,12 +192,20 @@ const SuperAdminLogin: React.FC = () => {
             ) : (
               <form onSubmit={handleVerifyOtp} className="space-y-4">
                 {successMessage && (
-                  <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium bg-emerald-50 p-3 rounded-lg mb-4">
-                    <CheckCircle2 className="h-5 w-5" />
-                    {successMessage}
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium bg-emerald-50 p-3 rounded-lg">
+                      <CheckCircle2 className="h-5 w-5" />
+                      {successMessage}
+                    </div>
+                    {email.includes('@') && (
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-[10px] font-bold text-amber-700 leading-tight">
+                        <span className="text-amber-800 uppercase block mb-1">Developer Notice:</span>
+                        You are in UI simulation mode. Form submissions will fail with "Invalid Token" errors as this bypass does not grant real API access. Use a real OTP for full functionality.
+                      </div>
+                    )}
                   </div>
                 )}
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="otp" className="text-sm font-bold text-slate-900">One-Time Password</Label>
                   <Input
@@ -173,17 +224,17 @@ const SuperAdminLogin: React.FC = () => {
                   <p className="text-sm text-red-500 font-medium bg-red-50 p-3 rounded-lg">{error}</p>
                 )}
 
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-md"
                   disabled={isLoading}
                 >
                   {isLoading ? 'Verifying...' : 'Verify Access'}
                 </Button>
-                
+
                 <div className="text-center mt-4">
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => { setOtpSent(false); setError(''); }}
                     className="text-sm font-semibold text-orange-600 hover:text-orange-500"
                   >

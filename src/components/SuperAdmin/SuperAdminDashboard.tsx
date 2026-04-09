@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { User, Building2, UserPlus, HandCoins, CalendarDays, FileQuestion } from 'lucide-react';
-import { 
+import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip
 } from 'recharts';
 
@@ -27,6 +27,7 @@ const SuperAdminDashboard: React.FC = () => {
   const [counts, setCounts] = useState({ total: 0, active: 0, inactive: 0 });
   const [adminCounts, setAdminCounts] = useState({ total: 0, active: 0, inactive: 0 });
   const [roleCounts, setRoleCounts] = useState<any>(null);
+  const [companyCounts, setCompanyCounts] = useState({ total: 0, active: 0, inactive: 0 });
 
   useEffect(() => {
     const fetchCounts = async () => {
@@ -36,10 +37,11 @@ const SuperAdminDashboard: React.FC = () => {
           'Authorization': `Bearer ${token}`
         };
 
-        const [saRes, aRes, roleRes] = await Promise.all([
-          fetch('https://staffly.space/super-admin/dashboard/super-admin-counts', { headers }),
-          fetch('https://staffly.space/super-admin/dashboard/admin-counts', { headers }),
-          fetch('https://staffly.space/super-admin/dashboard/users-by-role-created-by-admin', { headers })
+        const [saRes, aRes, cRes, roleRes] = await Promise.all([
+          fetch('https://testing.staffly.space/super-admin/dashboard/super-admin-counts', { headers }),
+          fetch('https://testing.staffly.space/super-admin/dashboard/admin-counts', { headers }),
+          fetch('https://testing.staffly.space/companies', { headers }), // Or use a dedicated count endpoint if exists
+          fetch('https://testing.staffly.space/super-admin/dashboard/users-by-role-created-by-admin', { headers })
         ]);
 
         if (saRes.ok) {
@@ -49,6 +51,16 @@ const SuperAdminDashboard: React.FC = () => {
         if (aRes.ok) {
           const aData = await aRes.json();
           setAdminCounts(aData);
+        }
+        if (cRes.ok) {
+          const cData = await cRes.json();
+          if (Array.isArray(cData)) {
+            setCompanyCounts({
+              total: cData.length,
+              active: cData.filter((c: any) => c.status).length,
+              inactive: cData.filter((c: any) => !c.status).length
+            });
+          }
         }
         if (roleRes.ok) {
           const roleData = await roleRes.json();
@@ -62,9 +74,9 @@ const SuperAdminDashboard: React.FC = () => {
   }, []);
 
   const stats = [
-    { title: 'Total Companies', value: '34', style: 'bg-[#6ee7b7] border-[#059669]' },
-    { title: 'Active Companies', value: '31', style: 'bg-[#fde047] border-[#ca8a04]' },
-    { title: 'Total Users', value: '1,240', style: 'bg-[#2dd4bf] border-[#0f766e]' },
+    { title: 'Total Companies', value: companyCounts.total.toString(), style: 'bg-[#6ee7b7] border-[#059669]' },
+    { title: 'Active Companies', value: companyCounts.active.toString(), style: 'bg-[#fde047] border-[#ca8a04]' },
+    { title: 'Total Users', value: (counts.total + adminCounts.total).toString(), style: 'bg-[#2dd4bf] border-[#0f766e]' },
     { title: 'Monthly Revenue', value: '₹3.4L', style: 'bg-[#818cf8] border-[#4338ca]' },
     { title: 'Expiring Subscriptions', value: '3', style: 'bg-[#fb923c] border-[#c2410c]' },
   ];
@@ -80,7 +92,7 @@ const SuperAdminDashboard: React.FC = () => {
 
   return (
     <div className="space-y-12 bg-white min-h-screen p-6">
-      
+
       {/* Top Banner Stats */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -88,8 +100,8 @@ const SuperAdminDashboard: React.FC = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {stats.map((stat, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className={`flex flex-col items-center justify-center p-6 rounded-2xl border-b-[8px] ${stat.style} text-slate-900 shadow-sm`}
             >
               <span className="text-sm font-bold text-center leading-tight mb-2">{stat.title}</span>
@@ -116,7 +128,7 @@ const SuperAdminDashboard: React.FC = () => {
                 <p className="text-2xl font-black text-slate-900">{counts.total}</p>
               </div>
             </div>
-            
+
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-3">
               <div className="p-3 bg-emerald-50 rounded-xl w-fit">
                 <User className="h-5 w-5 text-emerald-600" />
@@ -154,7 +166,7 @@ const SuperAdminDashboard: React.FC = () => {
                 <p className="text-2xl font-black text-slate-900">{adminCounts.total}</p>
               </div>
             </div>
-            
+
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-3">
               <div className="p-3 bg-teal-50 rounded-xl w-fit">
                 <UserPlus className="h-5 w-5 text-teal-600" />
@@ -188,17 +200,16 @@ const SuperAdminDashboard: React.FC = () => {
             {Object.entries(roleCounts).map(([role, stats]: [string, any]) => (
               <div key={role} className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow group flex flex-col gap-4">
                 <div className="flex items-center justify-between">
-                  <div className={`p-2 rounded-xl group-hover:scale-110 transition-transform ${
-                    role === 'Admin' ? 'bg-orange-50 text-orange-600' :
-                    role === 'HR' ? 'bg-indigo-50 text-indigo-600' :
-                    role === 'Manager' ? 'bg-sky-50 text-sky-600' :
-                    role === 'TeamLead' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-600'
-                  }`}>
+                  <div className={`p-2 rounded-xl group-hover:scale-110 transition-transform ${role === 'Admin' ? 'bg-orange-50 text-orange-600' :
+                      role === 'HR' ? 'bg-indigo-50 text-indigo-600' :
+                        role === 'Manager' ? 'bg-sky-50 text-sky-600' :
+                          role === 'TeamLead' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-600'
+                    }`}>
                     <User className="h-5 w-5" />
                   </div>
                   <span className="text-xs font-bold text-slate-400 tracking-widest uppercase">{role}</span>
                 </div>
-                
+
                 <div className="space-y-3">
                   <div className="flex items-end justify-between border-b border-slate-50 pb-2">
                     <p className="text-[10px] font-bold text-slate-500 uppercase">Total</p>
@@ -228,8 +239,8 @@ const SuperAdminDashboard: React.FC = () => {
       {/* Action Buttons */}
       <div className="flex flex-wrap justify-center gap-6">
         {actions.map((action, index) => (
-          <button 
-            key={index} 
+          <button
+            key={index}
             className="flex flex-col items-center justify-center p-4 h-[120px] w-[120px] bg-white border border-slate-300 rounded-3xl shadow-sm hover:shadow-md hover:border-slate-400 transition-all group"
           >
             <action.icon className="h-10 w-10 text-slate-900 mb-3 group-hover:scale-110 transition-transform" strokeWidth={1.5} />
@@ -240,7 +251,7 @@ const SuperAdminDashboard: React.FC = () => {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        
+
         {/* Chart 1: Company Growth */}
         <div className="flex flex-col items-center">
           <Card className="w-full border shadow-sm rounded-none">
@@ -248,9 +259,9 @@ const SuperAdminDashboard: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={dataGrowth} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="name" axisLine={true} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10}} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10}} />
-                  <Tooltip cursor={{fill: '#f1f5f9'}} />
+                  <XAxis dataKey="name" axisLine={true} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                  <Tooltip cursor={{ fill: '#f1f5f9' }} />
                   <Bar dataKey="value" fill="#38bdf8" />
                 </BarChart>
               </ResponsiveContainer>
@@ -266,9 +277,9 @@ const SuperAdminDashboard: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={dataRevenue} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="name" axisLine={true} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10}} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10}} />
-                  <Tooltip cursor={{fill: '#f1f5f9'}} />
+                  <XAxis dataKey="name" axisLine={true} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                  <Tooltip cursor={{ fill: '#f1f5f9' }} />
                   <Bar dataKey="value" fill="#38bdf8" />
                 </BarChart>
               </ResponsiveContainer>
@@ -284,9 +295,9 @@ const SuperAdminDashboard: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={dataUsers} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="name" axisLine={true} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10}} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10}} />
-                  <Tooltip cursor={{fill: '#f1f5f9'}} />
+                  <XAxis dataKey="name" axisLine={true} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                  <Tooltip cursor={{ fill: '#f1f5f9' }} />
                   <Bar dataKey="value" fill="#38bdf8" />
                 </BarChart>
               </ResponsiveContainer>

@@ -5,13 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Briefcase, Eye, Edit, Trash2, XCircle, Search, Plus, CheckCircle2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -79,7 +79,7 @@ const AdminManagement: React.FC = () => {
     setListError('');
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('https://staffly.space/super-admin/admins', {
+      const response = await fetch('https://testing.staffly.space/super-admin/admins', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -107,10 +107,10 @@ const AdminManagement: React.FC = () => {
     setViewData(null);
     setViewError('');
     setIsViewModalOpen(true);
-    
+
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`https://staffly.space/super-admin/admins/${adminId}`, {
+      const response = await fetch(`https://testing.staffly.space/super-admin/admins/${adminId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -178,9 +178,9 @@ const AdminManagement: React.FC = () => {
     ].filter(Boolean).join(', ');
 
     const isEditing = !!editAdminId;
-    const url = isEditing 
-      ? `https://staffly.space/super-admin/admins/${editAdminId}`
-      : 'https://staffly.space/super-admin/admins';
+    const url = isEditing
+      ? `https://testing.staffly.space/super-admin/admins/${editAdminId}`
+      : 'https://testing.staffly.space/super-admin/admins';
     const method = isEditing ? 'PUT' : 'POST';
 
     const payload = isEditing ? {
@@ -234,7 +234,7 @@ const AdminManagement: React.FC = () => {
   const handleStatusToggle = async (adminId: number, currentStatus: boolean) => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`https://staffly.space/super-admin/admins/${adminId}/status`, {
+      const response = await fetch(`https://testing.staffly.space/super-admin/admins/${adminId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -268,7 +268,7 @@ const AdminManagement: React.FC = () => {
 
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`https://staffly.space/super-admin/admins/${deleteAdminId}`, {
+      const response = await fetch(`https://testing.staffly.space/super-admin/admins/${deleteAdminId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -276,7 +276,7 @@ const AdminManagement: React.FC = () => {
         }
       });
       const data = await response.json();
-      
+
       if (response.ok) {
         setIsDeleteDialogOpen(false);
         setDeleteAdminId(null);
@@ -294,7 +294,7 @@ const AdminManagement: React.FC = () => {
 
   return (
     <div className="space-y-4 p-4 min-h-screen">
-      
+
       <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
@@ -303,7 +303,7 @@ const AdminManagement: React.FC = () => {
             </div>
             <h1 className="text-xl font-bold text-slate-800 tracking-tight">Admin Management</h1>
           </div>
-          
+
           <div className="flex items-center gap-3 text-left">
             {/* Delete Dialog */}
             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -322,7 +322,7 @@ const AdminManagement: React.FC = () => {
                   <p className="text-sm font-semibold text-slate-600 leading-relaxed text-center px-4">
                     Are you sure you want to permanently delete this administrator from your system?
                   </p>
-                  
+
                   {deleteError && (
                     <div className="p-3 bg-rose-50 text-rose-600 text-xs font-bold rounded-lg text-center border border-rose-100">
                       {deleteError}
@@ -330,15 +330,15 @@ const AdminManagement: React.FC = () => {
                   )}
 
                   <div className="flex items-center gap-3 pt-2">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="flex-1 bg-slate-50 hover:bg-slate-100 border-none font-bold text-slate-600 h-11"
                       onClick={() => setIsDeleteDialogOpen(false)}
                       disabled={isDeleting}
                     >
                       Cancel
                     </Button>
-                    <Button 
+                    <Button
                       className="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-bold h-11 shadow-lg shadow-rose-100"
                       onClick={handleDelete}
                       disabled={isDeleting}
@@ -415,7 +415,7 @@ const AdminManagement: React.FC = () => {
                   )}
 
                   <div className="flex items-center justify-center pt-2">
-                    <Button 
+                    <Button
                       className="bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg px-8 h-10 w-full"
                       onClick={() => setIsViewModalOpen(false)}
                     >
@@ -459,9 +459,9 @@ const AdminManagement: React.FC = () => {
                 <div className="p-6 max-h-[65vh] overflow-y-auto space-y-4 text-left">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-bold text-slate-900">Employee ID *</Label>
-                    <Input 
-                      placeholder="E.g. EMP001" 
-                      className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-slate-800 placeholder:text-slate-400 font-medium focus-visible:ring-1 focus-visible:ring-orange-400" 
+                    <Input
+                      placeholder="E.g. EMP001"
+                      className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-slate-800 placeholder:text-slate-400 font-medium focus-visible:ring-1 focus-visible:ring-orange-400"
                       value={formData.employee_id}
                       onChange={(e) => handleInputChange('employee_id', e.target.value)}
                     />
@@ -469,9 +469,9 @@ const AdminManagement: React.FC = () => {
 
                   <div className="space-y-1.5">
                     <Label className="text-sm font-bold text-slate-900">Name *</Label>
-                    <Input 
-                      placeholder="E.g., John Doe" 
-                      className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-slate-800 placeholder:text-slate-400 font-medium focus-visible:ring-1 focus-visible:ring-orange-400" 
+                    <Input
+                      placeholder="E.g., John Doe"
+                      className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-slate-800 placeholder:text-slate-400 font-medium focus-visible:ring-1 focus-visible:ring-orange-400"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
                     />
@@ -479,9 +479,9 @@ const AdminManagement: React.FC = () => {
 
                   <div className="space-y-1.5">
                     <Label className="text-sm font-bold text-slate-900">Email Address *</Label>
-                    <Input 
-                      placeholder="E.g., contact@company.com" 
-                      className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-slate-800 placeholder:text-slate-400 font-medium focus-visible:ring-1 focus-visible:ring-orange-400" 
+                    <Input
+                      placeholder="E.g., contact@company.com"
+                      className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-slate-800 placeholder:text-slate-400 font-medium focus-visible:ring-1 focus-visible:ring-orange-400"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
                     />
@@ -492,18 +492,18 @@ const AdminManagement: React.FC = () => {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <Label className="text-sm font-bold text-slate-900">Department *</Label>
-                          <Input 
-                            placeholder="Engineering" 
-                            className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-slate-800 placeholder:text-slate-400 font-medium focus-visible:ring-1 focus-visible:ring-orange-400" 
+                          <Input
+                            placeholder="Engineering"
+                            className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-slate-800 placeholder:text-slate-400 font-medium focus-visible:ring-1 focus-visible:ring-orange-400"
                             value={formData.department}
                             onChange={(e) => handleInputChange('department', e.target.value)}
                           />
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-sm font-bold text-slate-900">Designation *</Label>
-                          <Input 
-                            placeholder="Software Engineer" 
-                            className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-slate-800 placeholder:text-slate-400 font-medium focus-visible:ring-1 focus-visible:ring-orange-400" 
+                          <Input
+                            placeholder="Software Engineer"
+                            className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-slate-800 placeholder:text-slate-400 font-medium focus-visible:ring-1 focus-visible:ring-orange-400"
                             value={formData.designation}
                             onChange={(e) => handleInputChange('designation', e.target.value)}
                           />
@@ -512,9 +512,9 @@ const AdminManagement: React.FC = () => {
 
                       <div className="space-y-1.5">
                         <Label className="text-sm font-bold text-slate-900">Phone Number *</Label>
-                        <Input 
-                          placeholder="+91-1234567890" 
-                          className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-slate-800 placeholder:text-slate-400 font-medium focus-visible:ring-1 focus-visible:ring-orange-400" 
+                        <Input
+                          placeholder="+91-1234567890"
+                          className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-slate-800 placeholder:text-slate-400 font-medium focus-visible:ring-1 focus-visible:ring-orange-400"
                           value={formData.phone}
                           onChange={(e) => handleInputChange('phone', e.target.value)}
                         />
@@ -525,36 +525,36 @@ const AdminManagement: React.FC = () => {
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1.5">
                             <Label className="text-xs font-bold text-slate-800">Flat / Office No.</Label>
-                            <Input 
-                              placeholder="E.g., 401" 
-                              className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-sm focus-visible:ring-orange-400" 
+                            <Input
+                              placeholder="E.g., 401"
+                              className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-sm focus-visible:ring-orange-400"
                               value={formData.address.flat}
                               onChange={(e) => handleInputChange('address.flat', e.target.value)}
                             />
                           </div>
                           <div className="space-y-1.5">
                             <Label className="text-xs font-bold text-slate-800">Building Name</Label>
-                            <Input 
-                              placeholder="E.g., Tech Tower" 
-                              className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-sm focus-visible:ring-orange-400" 
+                            <Input
+                              placeholder="E.g., Tech Tower"
+                              className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-sm focus-visible:ring-orange-400"
                               value={formData.address.building}
                               onChange={(e) => handleInputChange('address.building', e.target.value)}
                             />
                           </div>
                           <div className="space-y-1.5">
                             <Label className="text-xs font-bold text-slate-800">City</Label>
-                            <Input 
-                              placeholder="E.g., Mumbai" 
-                              className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-sm focus-visible:ring-orange-400" 
+                            <Input
+                              placeholder="E.g., Mumbai"
+                              className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-sm focus-visible:ring-orange-400"
                               value={formData.address.city}
                               onChange={(e) => handleInputChange('address.city', e.target.value)}
                             />
                           </div>
                           <div className="space-y-1.5">
                             <Label className="text-xs font-bold text-slate-800">Pincode</Label>
-                            <Input 
-                              placeholder="E.g., 400001" 
-                              className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-sm focus-visible:ring-orange-400" 
+                            <Input
+                              placeholder="E.g., 400001"
+                              className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-sm focus-visible:ring-orange-400"
                               value={formData.address.pincode}
                               onChange={(e) => handleInputChange('address.pincode', e.target.value)}
                             />
@@ -596,15 +596,15 @@ const AdminManagement: React.FC = () => {
                   {error && <p className="text-xs font-bold text-rose-500 text-center animate-pulse">{error}</p>}
 
                   <div className="flex items-center gap-4 pt-4 border-t border-slate-100">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="flex-1 bg-slate-50 hover:bg-slate-100 border-none font-bold text-slate-600 h-11"
                       onClick={() => setIsOpen(false)}
                       disabled={isLoading}
                     >
                       Cancel
                     </Button>
-                    <Button 
+                    <Button
                       className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold h-11 shadow-lg shadow-orange-100"
                       onClick={handleSubmit}
                       disabled={isLoading}
@@ -626,15 +626,15 @@ const AdminManagement: React.FC = () => {
           <div className="flex items-center gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input 
-                type="search" 
-                placeholder="Search administrators..." 
+              <Input
+                type="search"
+                placeholder="Search administrators..."
                 className="pl-9 h-9 w-[280px] rounded-lg border-slate-200 bg-white placeholder:text-slate-400 text-sm focus:ring-orange-400"
               />
             </div>
           </div>
         </CardHeader>
-        
+
         <CardContent className="p-0">
           <div className="w-full relative overflow-x-auto">
             <Table>
@@ -684,8 +684,8 @@ const AdminManagement: React.FC = () => {
                         <button onClick={() => handleViewClick(admin.user_id)} className="text-slate-700 hover:text-blue-600 transition-colors p-1"><Eye className="h-5 w-5" /></button>
                         <button onClick={() => handleEditClick(admin)} className="text-slate-700 hover:text-emerald-600 transition-colors p-1"><Edit className="h-5 w-5" /></button>
                         <button onClick={() => confirmDelete(admin.user_id)} className="text-slate-700 hover:text-red-600 transition-colors p-1"><Trash2 className="h-5 w-5" /></button>
-                        <button 
-                          onClick={() => handleStatusToggle(admin.user_id, admin.is_active)} 
+                        <button
+                          onClick={() => handleStatusToggle(admin.user_id, admin.is_active)}
                           className={`transition-colors p-1 ${admin.is_active ? 'text-slate-700 hover:text-orange-600' : 'text-emerald-500 hover:text-emerald-600'}`}
                         >
                           {admin.is_active ? <XCircle className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}

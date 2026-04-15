@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
   Plus,
@@ -291,7 +292,8 @@ const SubscriptionPlans: React.FC = () => {
     planName: '',
     numberOfUsers: '',
     price: '',
-    tenure: ''
+    tenure: '',
+    description: ''
   });
 
   const handleSubmitPlan = async () => {
@@ -328,7 +330,7 @@ const SubscriptionPlans: React.FC = () => {
             setPlans(prev => prev.map(p => p.plan_id === editPlanId ? simulatedPlan : p));
           }
  
-          setFormData({ planName: '', numberOfUsers: '', price: '', tenure: '' });
+          setFormData({ planName: '', numberOfUsers: '', price: '', tenure: '', description: '' });
           alert(`Dev Mode: Subscription plan ${isEditing ? 'updated' : 'created'} successfully (Simulated)`);
           setIsLoading(false);
         }, 800);
@@ -363,7 +365,8 @@ const SubscriptionPlans: React.FC = () => {
           planName: '',
           numberOfUsers: '',
           price: '',
-          tenure: ''
+          tenure: '',
+          description: ''
         });
         alert(`Subscription plan ${isEditing ? 'updated' : 'created'} successfully!`);
       } else {
@@ -386,7 +389,8 @@ const SubscriptionPlans: React.FC = () => {
         planName: planData.plan_name || '',
         numberOfUsers: String(planData.max_users || ''),
         price: String(parseFloat(planData.price || '0')),
-        tenure: String(planData.duration_months || '1')
+        tenure: String(planData.duration_months || '1'),
+        description: planData.description || ''
       });
       setIsModalOpen(true);
     } else {
@@ -728,6 +732,19 @@ const SubscriptionPlans: React.FC = () => {
                   className="bg-orange-50/50 border-slate-200 rounded-lg h-10 text-slate-800 placeholder:text-slate-400 font-medium focus-visible:ring-1 focus-visible:ring-orange-400"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="description" className="text-sm font-bold text-slate-900">
+                  Description
+                </Label>
+                <Textarea
+                  id="description"
+                  placeholder="Describe what's included in this plan..."
+                  className="bg-orange-50/50 border-slate-200 rounded-lg min-h-[80px] text-slate-800 placeholder:text-slate-400 font-medium focus-visible:ring-1 focus-visible:ring-orange-400"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
 

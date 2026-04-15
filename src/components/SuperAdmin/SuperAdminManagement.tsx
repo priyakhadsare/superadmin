@@ -81,6 +81,14 @@ const SuperAdminManagement: React.FC = () => {
     setListError('');
     try {
       const token = localStorage.getItem('access_token');
+ 
+      // Developer Simulation Mode
+      if (token === 'dev_bypass_token') {
+        setAdmins([]);
+        setIsLoadingList(false);
+        return;
+      }
+ 
       const response = await fetch('https://testing.staffly.space/super-admin/list', {
         method: 'GET',
         headers: {
@@ -117,6 +125,18 @@ const SuperAdminManagement: React.FC = () => {
 
     try {
       const token = localStorage.getItem('access_token');
+      // Developer Simulation Mode
+      if (token === 'dev_bypass_token') {
+        setTimeout(() => {
+          setIsDeleteDialogOpen(false);
+          setAdmins(prev => prev.filter(a => a.super_admin_id !== deleteAdminId));
+          setDeleteAdminId(null);
+          setIsDeleting(false);
+          alert('Dev Mode: Super Admin deleted successfully (Simulated)');
+        }, 500);
+        return;
+      }
+ 
       const response = await fetch(`https://testing.staffly.space/super-admin/delete/${deleteAdminId}`, {
         method: 'DELETE',
         headers: {
@@ -125,6 +145,8 @@ const SuperAdminManagement: React.FC = () => {
         }
       });
 
+
+ 
       if (response.ok) {
         setIsDeleteDialogOpen(false);
         setDeleteAdminId(null);
@@ -147,6 +169,14 @@ const SuperAdminManagement: React.FC = () => {
 
     try {
       const token = localStorage.getItem('access_token');
+ 
+      // Developer Simulation Mode
+      if (token === 'dev_bypass_token') {
+        const admin = admins.find(a => a.super_admin_id === adminId) || admins[0];
+        setViewData(admin);
+        return;
+      }
+ 
       const response = await fetch(`https://testing.staffly.space/super-admin/view/${adminId}`, {
         method: 'GET',
         headers: {
@@ -184,11 +214,38 @@ const SuperAdminManagement: React.FC = () => {
     try {
       const token = localStorage.getItem('access_token');
       const isEditing = !!editAdminId;
+ 
+      // Developer Simulation Mode
+      if (token === 'dev_bypass_token') {
+        setTimeout(() => {
+          setIsModalOpen(false);
+          const simulatedAdmin = {
+            super_admin_id: isEditing ? parseInt(editAdminId) : Math.floor(Math.random() * 1000),
+            name: formData.name,
+            email: formData.email,
+            contact_no: formData.contact_no,
+            gender: formData.gender,
+            is_active: true,
+            created_on: new Date().toISOString()
+          };
+          if (isEditing) {
+            setAdmins(prev => prev.map(a => a.super_admin_id === simulatedAdmin.super_admin_id ? simulatedAdmin : a));
+          } else {
+            setAdmins(prev => [simulatedAdmin, ...prev]);
+          }
+          setEditAdminId(null);
+          setFormData({ name: '', email: '', contact_no: '', gender: 'Male', password: '' });
+          setIsLoading(false);
+          alert(`Dev Mode: Super Admin ${isEditing ? 'updated' : 'created'} successfully (Simulated)`);
+        }, 500);
+        return;
+      }
+ 
       const url = isEditing
         ? `https://testing.staffly.space/super-admin/update/${editAdminId}`
         : 'https://testing.staffly.space/super-admin/create';
       const method = isEditing ? 'PUT' : 'POST';
-
+ 
       const response = await fetch(url, {
         method,
         headers: {
@@ -517,8 +574,8 @@ const SuperAdminManagement: React.FC = () => {
                     <TableCell className="font-semibold text-slate-600 text-sm lowercase">{admin.email}</TableCell>
                     <TableCell>
                       <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm transition-all ${admin.is_active
-                          ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                          : 'bg-rose-50 text-rose-600 border border-rose-100'
+                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                        : 'bg-rose-50 text-rose-600 border border-rose-100'
                         }`}>
                         {admin.is_active ? 'Active' : 'Inactive'}
                       </span>
@@ -547,8 +604,8 @@ const SuperAdminManagement: React.FC = () => {
                   variant={page === 1 ? 'default' : 'ghost'}
                   size="sm"
                   className={`h-9 w-9 p-0 font-bold rounded-xl transition-all ${page === 1
-                      ? 'bg-slate-900 text-white shadow-lg'
-                      : 'text-slate-500 hover:text-slate-900 hover:bg-white'
+                    ? 'bg-slate-900 text-white shadow-lg'
+                    : 'text-slate-500 hover:text-slate-900 hover:bg-white'
                     }`}
                 >
                   {page}

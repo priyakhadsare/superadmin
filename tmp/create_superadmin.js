@@ -2,7 +2,7 @@
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 async function createSuperAdmin() {
-  const url = 'https://testing.staffly.space/super-admin/create';
+  const url = 'https://testing.testing.staffly.space/super-admin/create';
   const payload = {
     name: 'Vipul Patil',
     email: 'vipulpatil@gmail.com',

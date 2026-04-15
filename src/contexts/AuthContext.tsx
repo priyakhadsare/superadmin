@@ -17,25 +17,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const verifyToken = (token: string) => {
-    // Allow dev bypass token
-    if (token === 'dev_bypass_token') return true;
+  const isTokenValid = (tk: string): boolean => {
+    if (!tk) return false;
+    // Allow dev bypass token (kept for internal dev use only)
+    if (tk === 'dev_bypass_token') return true;
 
     try {
-      const decoded: any = jwtDecode(token);
+      const decoded: any = jwtDecode(tk);
+      // If token has no exp claim, treat as valid
+      if (!decoded.exp) return true;
       const currentTime = Date.now() / 1000;
-      
-      // Check if token is expired
-      if (decoded.exp < currentTime) {
-        logout();
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      logout();
+      return decoded.exp > currentTime;
+    } catch {
+      // If decode fails, the token is invalid/malformed
       return false;
     }
+  };
+
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('user');
   };
 
   useEffect(() => {
@@ -43,9 +46,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const savedUser = localStorage.getItem('user');
 
     if (savedToken && savedUser) {
-      if (verifyToken(savedToken)) {
+      if (isTokenValid(savedToken)) {
         setToken(savedToken);
-        setUser(JSON.parse(savedUser));
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch {
+          // Corrupted user JSON — clear and re-login
+          logout();
+        }
+      } else {
+        // Token expired — clear storage silently
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
       }
     }
     setIsLoading(false);
@@ -59,21 +71,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user');
-  };
-
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      token, 
-      login, 
-      logout, 
+    <AuthContext.Provider value={{
+      user,
+      token,
+      login,
+      logout,
       isAuthenticated: !!token,
-      isLoading 
+      isLoading
     }}>
       {children}
     </AuthContext.Provider>

@@ -44,15 +44,25 @@ const BranchManagement: React.FC = () => {
   const [isLoadingBranchAdmins, setIsLoadingBranchAdmins] = useState(false);
   const [selectedBranchName, setSelectedBranchName] = useState('');
   const [selectedBranchIdForAdmins, setSelectedBranchIdForAdmins] = useState<number | null>(null);
-  
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isAddingBranch, setIsAddingBranch] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [addFormData, setAddFormData] = useState({
     company_id: '',
     branch_name: '',
     branch_email: '',
     contact_number: '',
     address: ''
+  });
+  const [editFormData, setEditFormData] = useState({
+    branch_id: 0,
+    company_id: 0,
+    branch_name: '',
+    branch_email: '',
+    contact_number: '',
+    address: '',
+    status: true
   });
 
   // Fetch Companies for Filter
@@ -79,6 +89,13 @@ const BranchManagement: React.FC = () => {
     setError('');
     try {
       const token = localStorage.getItem('access_token');
+ 
+      if (token === 'dev_bypass_token') {
+        setBranches([]);
+        setIsLoading(false);
+        return;
+      }
+
       const queryParams = new URLSearchParams();
 
       if (selectedCompanyId !== 'all') queryParams.append('company_id', selectedCompanyId);
@@ -86,7 +103,7 @@ const BranchManagement: React.FC = () => {
       if (statusFilter !== 'none') queryParams.append('status_filter', statusFilter);
 
       const url = `https://testing.staffly.space/company-branches?${queryParams.toString()}`;
-
+ 
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -94,6 +111,9 @@ const BranchManagement: React.FC = () => {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         }
       });
+
+
+
       const data = await response.json();
       if (response.ok) {
         setBranches(Array.isArray(data) ? data : []);
@@ -115,10 +135,30 @@ const BranchManagement: React.FC = () => {
     fetchBranches();
   }, [selectedCompanyId, statusFilter, includeDeleted]);
 
+  const handleEditClick = (branch: any) => {
+    setEditFormData({
+      branch_id: branch.branch_id,
+      company_id: branch.company_id,
+      branch_name: branch.branch_name || '',
+      branch_email: branch.branch_email || '',
+      contact_number: branch.contact_number || '',
+      address: branch.address || '',
+      status: branch.status ?? true
+    });
+    setIsEditModalOpen(true);
+  };
+
   const handleBranchStatusToggle = async (branchId: number, currentStatus: boolean) => {
     try {
       const token = localStorage.getItem('access_token');
       const newStatus = !currentStatus;
+ 
+      // Developer Simulation Mode
+      if (token === 'dev_bypass_token') {
+        setBranches(prev => prev.map(b => b.branch_id === branchId ? { ...b, status: newStatus } : b));
+        alert('Dev Mode: Branch status updated (Simulated)');
+        return;
+      }
 
       const response = await fetch(`https://testing.staffly.space/company-branches/${branchId}/status`, {
         method: 'PATCH',
@@ -151,12 +191,20 @@ const BranchManagement: React.FC = () => {
 
     try {
       const token = localStorage.getItem('access_token');
+ 
+      if (token === 'dev_bypass_token') {
+        alert('Branch archived successfully (Simulated).');
+        setBranches(prev => prev.filter(b => b.branch_id !== branchId));
+        return;
+      }
+ 
       const response = await fetch(`https://testing.staffly.space/company-branches/${branchId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
+        },
+        body: JSON.stringify({ branch_id: branchId })
       });
 
       if (response.ok) {
@@ -182,6 +230,13 @@ const BranchManagement: React.FC = () => {
       setIsLoadingAdmins(true);
       try {
         const token = localStorage.getItem('access_token');
+ 
+        if (token === 'dev_bypass_token') {
+          setAvailableAdmins([]);
+          setIsLoadingAdmins(false);
+          return;
+        }
+ 
         const response = await fetch(`https://testing.staffly.space/companies/${branch.company_id}/admins`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -206,6 +261,14 @@ const BranchManagement: React.FC = () => {
     setIsAssigningAdmin(true);
     try {
       const token = localStorage.getItem('access_token');
+ 
+      // Developer Simulation Mode
+      if (token === 'dev_bypass_token') {
+        alert('Dev Mode: Administrator linked successfully (Simulated)');
+        setIsAssignAdminModalOpen(false);
+        return;
+      }
+ 
       const response = await fetch(`https://testing.staffly.space/company-branches/${assignAdminBranchId}/admins`, {
         method: 'POST',
         headers: {
@@ -233,8 +296,29 @@ const BranchManagement: React.FC = () => {
     }
   };
 
-  const handleViewClick = (branch: any) => {
-    setViewData(branch);
+  const handleViewClick = async (branch: any) => {
+    try {
+      const token = localStorage.getItem('access_token');
+ 
+      // Developer Simulation Mode
+      if (token === 'dev_bypass_token') {
+        setViewData(branch);
+        setIsViewModalOpen(true);
+        return;
+      }
+ 
+      const response = await fetch(`https://testing.staffly.space/company-branches/${branch.branch_id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setViewData(data);
+      } else {
+        setViewData(branch); // Fallback to list data if fetch fails
+      }
+    } catch (err) {
+      setViewData(branch);
+    }
     setIsViewModalOpen(true);
   };
 
@@ -245,6 +329,14 @@ const BranchManagement: React.FC = () => {
     setIsLoadingBranchAdmins(true);
     try {
       const token = localStorage.getItem('access_token');
+ 
+      // Developer Simulation Mode
+      if (token === 'dev_bypass_token') {
+        setBranchAdmins([]);
+        setIsLoadingBranchAdmins(false);
+        return;
+      }
+ 
       const response = await fetch(`https://testing.staffly.space/company-branches/${branch.branch_id}/admins`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -264,9 +356,27 @@ const BranchManagement: React.FC = () => {
       return;
     }
 
-    setIsAddingBranch(true);
+    setIsProcessing(true);
     try {
       const token = localStorage.getItem('access_token');
+ 
+      // Simulation mode for dev bypass token
+      if (token === 'dev_bypass_token') {
+        setTimeout(() => {
+          setIsAddModalOpen(false);
+          const simulatedBranch = {
+            ...addFormData,
+            branch_id: Math.floor(Math.random() * 1000) + 100,
+            status: true
+          } as any;
+          setBranches(prev => [simulatedBranch, ...prev]);
+          setAddFormData({ company_id: '', branch_name: '', branch_email: '', contact_number: '', address: '' });
+          alert('Dev Mode: Branch created successfully (Simulated)');
+          setIsProcessing(false);
+        }, 800);
+        return;
+      }
+ 
       const response = await fetch('https://testing.staffly.space/company-branches', {
         method: 'POST',
         headers: {
@@ -283,28 +393,71 @@ const BranchManagement: React.FC = () => {
         })
       });
 
-      // Simulation mode for dev bypass token
-      if (token === 'dev_bypass_token') {
-        setTimeout(() => {
-          setIsAddModalOpen(false);
-          const simulatedBranch = {
-            ...addFormData,
-            branch_id: Math.floor(Math.random() * 1000) + 100,
-            status: true
-          };
-          setBranches(prev => [simulatedBranch, ...prev]);
-          setAddFormData({ company_id: '', branch_name: '', branch_email: '', contact_number: '', address: '' });
-          alert('Dev Mode: Branch created successfully (Simulated)');
-          setIsAddingBranch(false);
-        }, 800);
-        return;
-      }
-
       const data = await response.json();
+      if (response.ok) {
+        alert('Branch created successfully!');
+        setIsAddModalOpen(false);
+        setAddFormData({ company_id: '', branch_name: '', branch_email: '', contact_number: '', address: '' });
+        fetchBranches();
+      } else {
+        alert(data.message || 'Failed to create branch');
+      }
     } catch (err) {
       alert('Network error. Please try again.');
     } finally {
-      setIsAddingBranch(false);
+      setIsProcessing(false);
+    }
+  };
+
+  const handleUpdateBranchSubmit = async () => {
+    if (!editFormData.branch_name || !editFormData.branch_email || !editFormData.contact_number) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const token = localStorage.getItem('access_token');
+ 
+      // Simulation mode for dev bypass token
+      if (token === 'dev_bypass_token') {
+        setTimeout(() => {
+          setIsEditModalOpen(false);
+          setBranches(prev => prev.map(b => b.branch_id === editFormData.branch_id ? { ...b, ...editFormData } : b));
+          alert('Dev Mode: Branch updated successfully (Simulated)');
+          setIsProcessing(false);
+        }, 800);
+        return;
+      }
+ 
+      const response = await fetch(`https://testing.staffly.space/company-branches/${editFormData.branch_id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          branch_id: editFormData.branch_id,
+          branch_name: editFormData.branch_name,
+          branch_email: editFormData.branch_email,
+          contact_number: editFormData.contact_number,
+          address: editFormData.address,
+          status: editFormData.status
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        alert('Branch updated successfully!');
+        setIsEditModalOpen(false);
+        fetchBranches();
+      } else {
+        alert(data.message || 'Failed to update branch');
+      }
+    } catch (err) {
+      alert('Network error. Please try again.');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -321,7 +474,7 @@ const BranchManagement: React.FC = () => {
           </div>
         </div>
 
-        <Button 
+        <Button
           onClick={() => setIsAddModalOpen(true)}
           className="bg-orange-500 hover:bg-orange-600 text-white rounded-lg h-10 px-4 font-bold transition-all flex items-center gap-2"
         >
@@ -382,12 +535,13 @@ const BranchManagement: React.FC = () => {
             <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-lg border border-slate-100">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2">Archived:</span>
               <Select value={includeDeleted} onValueChange={(val: any) => setIncludeDeleted(val)}>
-                <SelectTrigger className="h-8 w-[80px] border-none shadow-none bg-transparent font-bold text-slate-800 focus:ring-0 text-xs">
+                <SelectTrigger className="h-8 w-[90px] border-none shadow-none bg-transparent font-bold text-slate-800 focus:ring-0 text-xs">
                   <SelectValue placeholder="Deleted" />
                 </SelectTrigger>
                 <SelectContent className="bg-white rounded-xl shadow-lg border-slate-100">
+                  <SelectItem value="none" className="font-semibold cursor-pointer">Default</SelectItem>
                   <SelectItem value="false" className="font-semibold cursor-pointer">Hide</SelectItem>
-                  <SelectItem value="true" className="font-semibold cursor-pointer">Show</SelectItem>
+                  <SelectItem value="true" className="font-semibold cursor-pointer">Show Both</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -469,7 +623,7 @@ const BranchManagement: React.FC = () => {
                         <button onClick={() => handleViewClick(branch)} className="text-slate-600 hover:text-sky-600 transition-colors" title="View Details"><Eye className="h-5 w-5" /></button>
                         <button onClick={() => handleShowBranchAdmins(branch)} className="text-slate-600 hover:text-emerald-600 transition-colors" title="View Assigned Admins"><Shield className="h-5 w-5" /></button>
                         <button onClick={() => handleAssignAdminClick(branch)} className="text-slate-600 hover:text-orange-500 transition-colors" title="Assign Admin"><UserPlus className="h-5 w-5" /></button>
-                        <button className="text-slate-600 hover:text-slate-900 transition-colors" title="Edit"><Edit className="h-5 w-5" /></button>
+                        <button onClick={() => handleEditClick(branch)} className="text-slate-600 hover:text-slate-900 transition-colors" title="Edit"><Edit className="h-5 w-5" /></button>
                         <button
                           onClick={() => handleBranchDelete(branch.branch_id, branch.branch_name)}
                           className="text-slate-600 hover:text-red-600 transition-colors"
@@ -527,6 +681,20 @@ const BranchManagement: React.FC = () => {
                     </span>
                   </div>
                 </div>
+
+                <div className="grid grid-cols-2 gap-4 border-t border-sky-50 pt-4">
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Created On</p>
+                    <p className="text-[11px] font-bold text-slate-600">{new Date(viewData.created_at || viewData.created_on).toLocaleString()}</p>
+                  </div>
+                  {viewData.updated_at && (
+                    <div className="space-y-1 text-right">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Last Update</p>
+                      <p className="text-[11px] font-bold text-slate-600">{new Date(viewData.updated_at).toLocaleString()}</p>
+                    </div>
+                  )}
+                </div>
+
                 <div className="space-y-1 p-3 bg-slate-50 rounded-xl border border-slate-100 border-dashed">
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                     Regional Localization
@@ -683,9 +851,9 @@ const BranchManagement: React.FC = () => {
           <div className="p-6 bg-white space-y-4 text-left font-bold">
             <div className="space-y-2">
               <Label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Parent Company *</Label>
-              <select 
+              <select
                 className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none"
-                value={addFormData.company_id} 
+                value={addFormData.company_id}
                 onChange={(e) => setAddFormData({ ...addFormData, company_id: e.target.value })}
               >
                 <option value="">Select Company</option>
@@ -699,7 +867,7 @@ const BranchManagement: React.FC = () => {
 
             <div className="space-y-2">
               <Label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Branch Name *</Label>
-              <Input 
+              <Input
                 value={addFormData.branch_name}
                 onChange={(e) => setAddFormData({ ...addFormData, branch_name: e.target.value })}
                 placeholder="E.g., Mumbai Corporate Office"
@@ -710,7 +878,7 @@ const BranchManagement: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Email *</Label>
-                <Input 
+                <Input
                   value={addFormData.branch_email}
                   onChange={(e) => setAddFormData({ ...addFormData, branch_email: e.target.value })}
                   placeholder="mumbai@company.com"
@@ -719,7 +887,7 @@ const BranchManagement: React.FC = () => {
               </div>
               <div className="space-y-2">
                 <Label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Contact *</Label>
-                <Input 
+                <Input
                   value={addFormData.contact_number}
                   onChange={(e) => setAddFormData({ ...addFormData, contact_number: e.target.value })}
                   placeholder="+91 9999988888"
@@ -730,7 +898,7 @@ const BranchManagement: React.FC = () => {
 
             <div className="space-y-2">
               <Label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Address</Label>
-              <Input 
+              <Input
                 value={addFormData.address}
                 onChange={(e) => setAddFormData({ ...addFormData, address: e.target.value })}
                 placeholder="Complete postal address"
@@ -749,9 +917,84 @@ const BranchManagement: React.FC = () => {
               <Button
                 className="bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl h-11"
                 onClick={handleAddBranchSubmit}
-                disabled={isAddingBranch}
+                disabled={isProcessing}
               >
-                {isAddingBranch ? 'Creating...' : 'Register Branch'}
+                {isProcessing ? 'Creating...' : 'Register Branch'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Branch Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="max-w-[450px] p-0 overflow-hidden border-none rounded-2xl bg-white shadow-2xl">
+          <DialogHeader className="bg-orange-500 p-6 flex flex-row items-center gap-4 space-y-0 text-left border-b border-white/10">
+            <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm border border-white/20">
+              <Edit className="h-6 w-6 text-white" strokeWidth={3} />
+            </div>
+            <div>
+              <DialogTitle className="text-xl font-bold text-white tracking-tight">Edit Branch</DialogTitle>
+              <DialogDescription className="text-xs text-orange-100 font-bold uppercase tracking-widest mt-0.5">Modify regional presence details</DialogDescription>
+            </div>
+          </DialogHeader>
+
+          <div className="p-6 bg-white space-y-4 text-left font-bold">
+            <div className="space-y-2">
+              <Label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Branch Name *</Label>
+              <Input
+                value={editFormData.branch_name}
+                onChange={(e) => setEditFormData({ ...editFormData, branch_name: e.target.value })}
+                placeholder="E.g., Mumbai Corporate Office"
+                className="h-11 border-slate-200 rounded-xl font-bold"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Email *</Label>
+                <Input
+                  value={editFormData.branch_email}
+                  onChange={(e) => setEditFormData({ ...editFormData, branch_email: e.target.value })}
+                  placeholder="mumbai@company.com"
+                  className="h-11 border-slate-200 rounded-xl font-bold"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Contact *</Label>
+                <Input
+                  value={editFormData.contact_number}
+                  onChange={(e) => setEditFormData({ ...editFormData, contact_number: e.target.value })}
+                  placeholder="+91 9999988888"
+                  className="h-11 border-slate-200 rounded-xl font-bold"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Address</Label>
+              <Input
+                value={editFormData.address}
+                onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
+                placeholder="Complete postal address"
+                className="h-11 border-slate-200 rounded-xl font-bold"
+              />
+            </div>
+
+            <div className="pt-4 grid grid-cols-2 gap-4 border-t border-slate-50">
+              <Button
+                variant="outline"
+                className="h-11 border-slate-200 font-bold text-slate-600 rounded-xl"
+                onClick={() => setIsEditModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl h-11"
+                onClick={handleUpdateBranchSubmit}
+                disabled={isProcessing}
+              >
+                {isProcessing ? 'Updating...' : 'Save Changes'}
               </Button>
             </div>
           </div>

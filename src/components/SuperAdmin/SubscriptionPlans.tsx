@@ -3,10 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
+import {
+  Plus,
+  Edit,
+  Trash2,
   CheckCircle2,
   MoreVertical,
   Zap,
@@ -37,13 +37,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from '@/components/ui/table';
 
 const SubscriptionPlans: React.FC = () => {
@@ -64,12 +64,18 @@ const SubscriptionPlans: React.FC = () => {
     setPlansLoading(true);
     try {
       const token = localStorage.getItem('access_token');
-      const url = filter === 'all'
-        ? 'https://testing.staffly.space/subscriptions/plans'
-        : `https://testing.staffly.space/subscriptions/plans?active_only=${filter}`;
+ 
+      if (token === 'dev_bypass_token') {
+        setPlans([]);
+        setPlansLoading(false);
+        return;
+      }
+ 
+      const url = `https://testing.staffly.space/subscriptions/plans?active_only=${filter}`;
       const response = await fetch(url, {
         headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
       });
+
       if (response.ok) {
         const data = await response.json();
         setPlans(Array.isArray(data) ? data : data.plans || []);
@@ -84,9 +90,16 @@ const SubscriptionPlans: React.FC = () => {
   const fetchPlanById = async (planId: number) => {
     try {
       const token = localStorage.getItem('access_token');
+ 
+      if (token === 'dev_bypass_token') {
+        const plan = plans.find(p => p.plan_id === planId) || null;
+        return plan;
+      }
+ 
       const response = await fetch(`https://testing.staffly.space/subscriptions/plans/${planId}`, {
         headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
       });
+ 
       if (response.ok) {
         return await response.json();
       }
@@ -138,16 +151,32 @@ const SubscriptionPlans: React.FC = () => {
   });
   const [isUpdatingBranch, setIsUpdatingBranch] = useState(false);
 
-  const fetchBranchSubscriptions = async () => {
+  const fetchBranchSubscriptions = async (branchId?: string) => {
     setIsBranchSubsLoading(true);
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('https://testing.staffly.space/subscriptions/branch-subscriptions', {
+ 
+      // Developer Simulation Mode
+      if (token === 'dev_bypass_token') {
+        setBranchSubscriptions([]);
+        setIsBranchSubsLoading(false);
+        return;
+      }
+ 
+      if (!branchId) {
+        setBranchSubscriptions([]);
+        setIsBranchSubsLoading(false);
+        return;
+      }
+
+      const url = `https://testing.staffly.space/subscriptions/branch-subscriptions/branch/${branchId}`;
+      const response = await fetch(url, {
         headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
       });
+
       if (response.ok) {
         const data = await response.json();
-        setBranchSubscriptions(Array.isArray(data) ? data : []);
+        setBranchSubscriptions(data ? [data] : []);
       }
     } catch (err) {
       console.error('Failed to fetch branch subscriptions:', err);
@@ -159,13 +188,26 @@ const SubscriptionPlans: React.FC = () => {
     setIsSubsLoading(true);
     try {
       const token = localStorage.getItem('access_token');
-      const url = companyId 
-        ? `https://testing.staffly.space/subscriptions/company-subscriptions/company/${companyId}`
-        : 'https://testing.staffly.space/subscriptions/company-subscriptions';
-        
+
+      // Developer Simulation Mode
+      if (token === 'dev_bypass_token') {
+        setCompanySubscriptions([]);
+        setIsSubsLoading(false);
+        return;
+      }
+
+      if (!companyId) {
+        setCompanySubscriptions([]);
+        setIsSubsLoading(false);
+        return;
+      }
+
+      const url = `https://testing.staffly.space/subscriptions/company-subscriptions/company/${companyId}`;
+
       const response = await fetch(url, {
         headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
       });
+
       if (response.ok) {
         const data = await response.json();
         if (companyId) {
@@ -199,6 +241,12 @@ const SubscriptionPlans: React.FC = () => {
         const data = await response.json();
         setCompanies(Array.isArray(data) ? data : []);
       }
+
+      // Developer Simulation Mode
+      if (token === 'dev_bypass_token') {
+        setCompanies([]);
+        return;
+      }
     } catch (err) {
       console.error('Failed to fetch companies:', err);
     }
@@ -212,6 +260,13 @@ const SubscriptionPlans: React.FC = () => {
       const response = await fetch(`https://testing.staffly.space/company-branches?company_id=${companyId}`, {
         headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
       });
+ 
+      if (token === 'dev_bypass_token') {
+        setBranchesForSelection([]);
+        setIsLoadingBranches(false);
+        return;
+      }
+ 
       if (response.ok) {
         const data = await response.json();
         setBranchesForSelection(Array.isArray(data) ? data : []);
@@ -226,8 +281,6 @@ const SubscriptionPlans: React.FC = () => {
   useEffect(() => {
     fetchPlans(activeFilter);
     fetchCompanies();
-    fetchCompanySubscriptions();
-    fetchBranchSubscriptions();
   }, [activeFilter]);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -253,10 +306,38 @@ const SubscriptionPlans: React.FC = () => {
     try {
       const token = localStorage.getItem('access_token');
       const isEditing = !!editPlanId;
-      const url = isEditing 
+ 
+      // Simulation mode for dev bypass token
+      if (token === 'dev_bypass_token') {
+        setTimeout(() => {
+          setIsModalOpen(false);
+          setEditPlanId(null);
+          const simulatedPlan = {
+            plan_id: isEditing ? editPlanId : Math.floor(Math.random() * 1000) + 100,
+            plan_name: formData.planName,
+            max_users: parseInt(formData.numberOfUsers),
+            price: parseFloat(formData.price),
+            duration_months: parseInt(formData.tenure),
+            description: `${formData.planName} (Simulated)`,
+            is_active: true
+          } as any;
+ 
+          if (!isEditing) {
+            setPlans(prev => [simulatedPlan, ...prev]);
+          } else {
+            setPlans(prev => prev.map(p => p.plan_id === editPlanId ? simulatedPlan : p));
+          }
+ 
+          setFormData({ planName: '', numberOfUsers: '', price: '', tenure: '' });
+          alert(`Dev Mode: Subscription plan ${isEditing ? 'updated' : 'created'} successfully (Simulated)`);
+          setIsLoading(false);
+        }, 800);
+        return;
+      }
+      const url = isEditing
         ? `https://testing.staffly.space/subscriptions/plans/${editPlanId}`
         : 'https://testing.staffly.space/subscriptions/plans';
-      
+
       const response = await fetch(url, {
         method: isEditing ? 'PUT' : 'POST',
         headers: {
@@ -264,12 +345,12 @@ const SubscriptionPlans: React.FC = () => {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
-          ...(isEditing ? { plan_id: editPlanId, is_active: true } : {}),
           plan_name: formData.planName,
-          description: `${formData.planName} for ${formData.tenure} months`,
+          description: formData.description || `${formData.planName} for ${formData.tenure} months`,
           max_users: parseInt(formData.numberOfUsers),
           price: parseFloat(formData.price),
-          duration_months: parseInt(formData.tenure)
+          duration_months: parseInt(formData.tenure),
+          ...(isEditing ? { is_active: true } : {})
         }),
       });
 
@@ -320,6 +401,15 @@ const SubscriptionPlans: React.FC = () => {
 
     try {
       const token = localStorage.getItem('access_token');
+ 
+      if (token === 'dev_bypass_token') {
+        setTimeout(() => {
+          setPlans(prev => prev.filter(p => p.plan_id !== planId));
+          alert('Dev Mode: Subscription plan deleted successfully (Simulated)');
+        }, 500);
+        return;
+      }
+ 
       const response = await fetch(`https://testing.staffly.space/subscriptions/plans/${planId}`, {
         method: 'DELETE',
         headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
@@ -346,6 +436,17 @@ const SubscriptionPlans: React.FC = () => {
     setIsAssigning(true);
     try {
       const token = localStorage.getItem('access_token');
+ 
+      if (token === 'dev_bypass_token') {
+        setTimeout(() => {
+          setIsAssignModalOpen(false);
+          setAssignFormData({ companyId: '', planId: '' });
+          alert('Dev Mode: Plan assigned successfully (Simulated)');
+          setIsAssigning(false);
+        }, 500);
+        return;
+      }
+ 
       const response = await fetch('https://testing.staffly.space/subscriptions/company-subscriptions', {
         method: 'POST',
         headers: {
@@ -427,10 +528,11 @@ const SubscriptionPlans: React.FC = () => {
     setIsDetailModalOpen(true);
     try {
       const token = localStorage.getItem('access_token');
+      if (!id) return;
       const url = type === 'company'
         ? `https://testing.staffly.space/subscriptions/company-subscriptions/company/${id}`
         : `https://testing.staffly.space/subscriptions/branch-subscriptions/branch/${id}`;
-        
+
       const response = await fetch(url, {
         headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
       });
@@ -454,6 +556,15 @@ const SubscriptionPlans: React.FC = () => {
     setIsUpdating(true);
     try {
       const token = localStorage.getItem('access_token');
+ 
+      // Developer Simulation Mode
+      if (token === 'dev_bypass_token') {
+        alert('Company subscription updated successfully (Simulated)!');
+        setIsUpdateModalOpen(false);
+        setIsUpdating(false);
+        return;
+      }
+ 
       const response = await fetch(`https://testing.staffly.space/subscriptions/company-subscriptions/${updateFormData.subscriptionId}`, {
         method: 'PUT',
         headers: {
@@ -461,7 +572,6 @@ const SubscriptionPlans: React.FC = () => {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
-          subscription_id: updateFormData.subscriptionId,
           plan_id: parseInt(updateFormData.planId),
           is_active: updateFormData.isActive
         })
@@ -492,6 +602,15 @@ const SubscriptionPlans: React.FC = () => {
     setIsUpdatingBranch(true);
     try {
       const token = localStorage.getItem('access_token');
+ 
+      // Developer Simulation Mode
+      if (token === 'dev_bypass_token') {
+        alert('Branch subscription updated successfully (Simulated)!');
+        setIsBranchUpdateModalOpen(false);
+        setIsUpdatingBranch(false);
+        return;
+      }
+ 
       const response = await fetch(`https://testing.staffly.space/subscriptions/branch-subscriptions/${branchUpdateFormData.subscriptionId}`, {
         method: 'PUT',
         headers: {
@@ -499,7 +618,6 @@ const SubscriptionPlans: React.FC = () => {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
-          subscription_id: branchUpdateFormData.subscriptionId,
           plan_id: parseInt(branchUpdateFormData.planId),
           is_active: branchUpdateFormData.isActive
         })
@@ -533,18 +651,17 @@ const SubscriptionPlans: React.FC = () => {
             Manage global pricing and feature sets for your organizations.
           </p>
         </div>
-        
+
         {/* Filter Tabs */}
         <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
           {(['all', 'true', 'false'] as const).map((filter) => (
             <button
               key={filter}
               onClick={() => setActiveFilter(filter)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${
-                activeFilter === filter
+              className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${activeFilter === filter
                   ? 'bg-white text-orange-600 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
-              }`}
+                }`}
             >
               {filter === 'all' ? 'All Plans' : filter === 'true' ? 'Active' : 'Inactive'}
             </button>
@@ -757,8 +874,8 @@ const SubscriptionPlans: React.FC = () => {
             <div className="flex items-center gap-3">
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input 
-                  placeholder="Enter Company ID..." 
+                <Input
+                  placeholder="Enter Company ID..."
                   className="pl-10 bg-white border-slate-200 rounded-xl"
                   value={subSearchQuery}
                   onChange={(e) => setSubSearchQuery(e.target.value)}
@@ -781,7 +898,7 @@ const SubscriptionPlans: React.FC = () => {
                   <div className="space-y-4 py-4">
                     <div className="space-y-2 text-left">
                       <label className="text-sm font-bold text-slate-700">Company</label>
-                      <select 
+                      <select
                         className="w-full h-10 px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm"
                         value={assignFormData.companyId}
                         onChange={(e) => setAssignFormData({ ...assignFormData, companyId: e.target.value })}
@@ -796,7 +913,7 @@ const SubscriptionPlans: React.FC = () => {
                     </div>
                     <div className="space-y-2 text-left">
                       <label className="text-sm font-bold text-slate-700">Subscription Plan</label>
-                      <select 
+                      <select
                         className="w-full h-10 px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm"
                         value={assignFormData.planId}
                         onChange={(e) => setAssignFormData({ ...assignFormData, planId: e.target.value })}
@@ -812,8 +929,8 @@ const SubscriptionPlans: React.FC = () => {
                   </div>
                   <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                     <Button variant="outline" onClick={() => setIsAssignModalOpen(false)}>Cancel</Button>
-                    <Button 
-                      className="bg-orange-500 hover:bg-orange-600 text-white font-bold" 
+                    <Button
+                      className="bg-orange-500 hover:bg-orange-600 text-white font-bold"
                       onClick={handleAssignPlan}
                       disabled={isAssigning}
                     >
@@ -839,7 +956,7 @@ const SubscriptionPlans: React.FC = () => {
                   <div className="space-y-4 py-4">
                     <div className="space-y-2 text-left">
                       <label className="text-sm font-bold text-slate-700">Company</label>
-                      <select 
+                      <select
                         className="w-full h-10 px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm"
                         value={branchAssignFormData.companyId}
                         onChange={(e) => {
@@ -859,7 +976,7 @@ const SubscriptionPlans: React.FC = () => {
 
                     <div className="space-y-2 text-left">
                       <label className="text-sm font-bold text-slate-700">Branch</label>
-                      <select 
+                      <select
                         className="w-full h-10 px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm disabled:opacity-50"
                         value={branchAssignFormData.branchId}
                         onChange={(e) => setBranchAssignFormData({ ...branchAssignFormData, branchId: e.target.value })}
@@ -876,7 +993,7 @@ const SubscriptionPlans: React.FC = () => {
 
                     <div className="space-y-2 text-left">
                       <label className="text-sm font-bold text-slate-700">Subscription Plan</label>
-                      <select 
+                      <select
                         className="w-full h-10 px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm"
                         value={branchAssignFormData.planId}
                         onChange={(e) => setBranchAssignFormData({ ...branchAssignFormData, planId: e.target.value })}
@@ -892,8 +1009,8 @@ const SubscriptionPlans: React.FC = () => {
                   </div>
                   <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                     <Button variant="outline" onClick={() => setIsBranchAssignModalOpen(false)}>Cancel</Button>
-                    <Button 
-                      className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold" 
+                    <Button
+                      className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold"
                       onClick={handleAssignBranchSubscription}
                       disabled={isAssigningBranch}
                     >
@@ -956,18 +1073,18 @@ const SubscriptionPlans: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell className="text-right pr-8">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleViewSubscriptionDetails(sub.company_id, 'company')}
                           className="font-bold text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded-lg mr-2"
                         >
                           Details
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleUpdateSubscriptionClick(sub)} 
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleUpdateSubscriptionClick(sub)}
                           className="font-bold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
                         >
                           Edit
@@ -994,11 +1111,11 @@ const SubscriptionPlans: React.FC = () => {
               <DialogDescription className="text-sm font-medium text-slate-500">Modify subscription plan and account status.</DialogDescription>
             </div>
           </DialogHeader>
-          
+
           <div className="p-6 space-y-5 text-left">
             <div className="space-y-2">
               <Label className="text-sm font-bold text-slate-700">Select New Plan *</Label>
-              <Select 
+              <Select
                 value={updateFormData.planId}
                 onValueChange={(val) => setUpdateFormData({ ...updateFormData, planId: val })}
               >
@@ -1024,8 +1141,8 @@ const SubscriptionPlans: React.FC = () => {
                 <p className="text-[10px] text-slate-500 font-medium">Enable or disable access for this organization.</p>
               </div>
               <div className="flex items-center space-x-2">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   id="isSubActive"
                   checked={updateFormData.isActive}
                   onChange={(e) => setUpdateFormData({ ...updateFormData, isActive: e.target.checked })}
@@ -1037,8 +1154,8 @@ const SubscriptionPlans: React.FC = () => {
 
           <div className="p-6 bg-slate-50/50 flex justify-end gap-3 border-t border-slate-100">
             <Button variant="outline" className="font-bold rounded-xl border-slate-200" onClick={() => setIsUpdateModalOpen(false)}>Cancel</Button>
-            <Button 
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-8 shadow-lg shadow-blue-100 transition-all active:scale-95" 
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-8 shadow-lg shadow-blue-100 transition-all active:scale-95"
               onClick={handleUpdateCompanySubscription}
               disabled={isUpdating}
             >
@@ -1191,17 +1308,17 @@ const SubscriptionPlans: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell className="text-right pr-8">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleViewSubscriptionDetails(sub.branch_id, 'branch')}
                           className="font-bold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg mr-2"
                         >
                           Details
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => {
                             setBranchUpdateFormData({
                               subscriptionId: sub.subscription_id,
@@ -1209,7 +1326,7 @@ const SubscriptionPlans: React.FC = () => {
                               isActive: sub.is_active
                             } as any);
                             setIsBranchUpdateModalOpen(true);
-                          }} 
+                          }}
                           className="font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg"
                         >
                           Modify
@@ -1236,11 +1353,11 @@ const SubscriptionPlans: React.FC = () => {
               <DialogDescription className="text-sm font-medium text-emerald-600">Update localized subscription parameters.</DialogDescription>
             </div>
           </DialogHeader>
-          
+
           <div className="p-6 space-y-5 text-left">
             <div className="space-y-2">
               <Label className="text-sm font-bold text-slate-700">Select New Plan *</Label>
-              <Select 
+              <Select
                 value={branchUpdateFormData.planId}
                 onValueChange={(val) => setBranchUpdateFormData({ ...branchUpdateFormData, planId: val })}
               >
@@ -1266,8 +1383,8 @@ const SubscriptionPlans: React.FC = () => {
                 <p className="text-[10px] text-slate-500 font-medium">Control entitlement status for this branch.</p>
               </div>
               <div className="flex items-center space-x-2">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   id="branchIsActive"
                   checked={branchUpdateFormData.isActive}
                   onChange={(e) => setBranchUpdateFormData({ ...branchUpdateFormData, isActive: e.target.checked })}
@@ -1279,8 +1396,8 @@ const SubscriptionPlans: React.FC = () => {
 
           <div className="p-6 bg-slate-50/50 flex justify-end gap-3 border-t border-slate-100">
             <Button variant="outline" className="font-bold rounded-xl border-slate-200" onClick={() => setIsBranchUpdateModalOpen(false)}>Cancel</Button>
-            <Button 
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-8 shadow-lg shadow-emerald-100 transition-all active:scale-95" 
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-8 shadow-lg shadow-emerald-100 transition-all active:scale-95"
               onClick={handleUpdateBranchSubscription}
               disabled={isUpdatingBranch}
             >

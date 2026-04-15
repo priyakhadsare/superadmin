@@ -15,6 +15,12 @@ const SuperAdminLogin: React.FC = () => {
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [otpInfo, setOtpInfo] = useState<{
+    message?: string;
+    environment?: string;
+    otp_method?: string;
+    expires_in_minutes?: number;
+  } | null>(null);
 
   const { login } = useAuth();
 
@@ -25,40 +31,35 @@ const SuperAdminLogin: React.FC = () => {
       return;
     }
 
-    // Dev Bypass for requested superadmin
-    const bypassEmails = ['vipulpatil@gmail.com', 'superadmin@example.com', 'darshan@gmail.com', 'darshanpatil@example.com'];
-    if (bypassEmails.includes(email)) {
-      let name = 'Vipul Patil';
-      if (email === 'superadmin@example.com') name = 'Default Super Admin';
-      if (email === 'darshan@gmail.com' || email === 'darshanpatil@example.com') name = 'Darshan Patil';
-      
-      setOtpSent(true);
-      setSuccessMessage(`Dev mode: Access code requested for ${name}.`);
-      return;
-    }
-
     setIsLoading(true);
     setError('');
 
     try {
-      const response = await fetch('https://testing.staffly.space/super-admin/send-otp', {
+      // Server expects query string, not JSON body
+      const url = `https://testing.staffly.space/super-admin/send-otp?email=${encodeURIComponent(email)}`;
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
+          'accept': 'application/json'
+        }
       });
 
       const data = await response.json();
 
       if (response.ok) {
+        setOtpInfo(data);
         setOtpSent(true);
         setSuccessMessage(data.message || 'OTP sent successfully!');
       } else {
-        setError(data.message || 'Failed to send OTP. Please try again.');
+        let errorMsg = 'Failed to send OTP. Please try again.';
+        if (typeof data.message === 'string') errorMsg = data.message;
+        else if (typeof data.detail === 'string') errorMsg = data.detail;
+        else if (Array.isArray(data.detail)) errorMsg = data.detail[0]?.msg || JSON.stringify(data.detail);
+        
+        setError(errorMsg);
       }
-    } catch (err) {
-      setError('Network error. Please try again later.');
+    } catch (err: any) {
+      setError(err.message || 'Network error. Please try again later.');
     } finally {
       setIsLoading(false);
     }
@@ -71,58 +72,66 @@ const SuperAdminLogin: React.FC = () => {
       return;
     }
 
-    // Dev Bypass for requested superadmin
-    const bypassEmails = ['vipulpatil@gmail.com', 'superadmin@example.com', 'darshan@gmail.com', 'darshanpatil@example.com'];
-    if (bypassEmails.includes(email) && otp === '123456') {
-      let name = 'Vipul Patil';
-      let adminId = 1;
-      
-      if (email === 'superadmin@example.com') {
-        name = 'Default Super Admin';
-        adminId = 1;
-      } else if (email === 'darshan@gmail.com' || email === 'darshanpatil@example.com') {
-        name = 'Darshan Patil';
-        adminId = 5;
-      }
-      
-      const mockUser = {
-        access_token: "dev_bypass_token",
-        email: email,
-        name: name,
-        super_admin_id: adminId,
-        is_active: true
-      };
-      localStorage.setItem('access_token', mockUser.access_token);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      login(mockUser);
-      navigate('/');
-      return;
-    }
-
     setIsLoading(true);
     setError('');
 
     try {
-      const response = await fetch('https://testing.staffly.space/super-admin/verify-otp', {
+      // Server expects query strings, not JSON body
+      const url = `https://testing.staffly.space/super-admin/verify-otp?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`;
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, otp: otp }), // Send OTP as a string
+          'accept': 'application/json'
+        }
       });
 
       const data = await response.json();
 
-      if (response.ok && data.access_token) {
-        localStorage.setItem('access_token', data.access_token);
-        localStorage.setItem('user', JSON.stringify(data));
-        login(data);
+      // Support both possible token field names from the API
+      const accessToken = data.access_token || data.token;
+ 
+      if (response.ok && accessToken) {
+        let fullProfile: Record<string, any> = {};
+        try {
+          // Fetch the full user details to populate the profile payload
+          const listRes = await fetch('https://testing.staffly.space/super-admin/list', {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          if (listRes.ok) {
+            const listData = await listRes.json();
+            if (Array.isArray(listData)) {
+              const matchedAdmin = listData.find((admin: any) => admin.email === (data.email || email));
+              if (matchedAdmin) {
+                fullProfile = matchedAdmin;
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("Could not fetch extended profile details", e);
+        }
+
+        const userData = {
+          ...data,
+          ...fullProfile,
+          access_token: accessToken,
+          email: data.email || email,
+          name: fullProfile.name || data.name || data.super_admin_name || email.split('@')[0]
+        };
+        localStorage.setItem('access_token', accessToken);
+        localStorage.setItem('user', JSON.stringify(userData));
+        login(userData);
         navigate('/');
       } else {
-        setError(data.message || data.detail || 'Failed to verify OTP. Please try again.');
+        let errorMsg = 'Invalid OTP. Please try again.';
+        if (typeof data.message === 'string') errorMsg = data.message;
+        else if (typeof data.detail === 'string') errorMsg = data.detail;
+        else if (Array.isArray(data.detail)) errorMsg = data.detail[0]?.msg || JSON.stringify(data.detail);
+        
+        setError(errorMsg);
       }
-    } catch (err) {
-      setError('Network error. Please try again later.');
+    } catch (err: any) {
+      setError(err.message || 'Network error. Please try again later.');
     } finally {
       setIsLoading(false);
     }
@@ -167,7 +176,7 @@ const SuperAdminLogin: React.FC = () => {
                     <Input
                       id="email"
                       type="email"
-                      placeholder="admin@testing.staffly.space"
+                      placeholder="admin@staffly.space"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-10 h-12 bg-slate-50 border-slate-200 focus-visible:ring-orange-500 rounded-xl"
@@ -191,17 +200,36 @@ const SuperAdminLogin: React.FC = () => {
               </form>
             ) : (
               <form onSubmit={handleVerifyOtp} className="space-y-4">
-                {successMessage && (
-                  <div className="space-y-3 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium bg-emerald-50 p-3 rounded-lg">
-                      <CheckCircle2 className="h-5 w-5" />
-                      {successMessage}
+                {otpInfo && (
+                  <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-2">
+                    <div className="flex items-center gap-2 text-emerald-700 font-bold text-sm">
+                      <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                      {otpInfo.message || 'OTP generated successfully'}
                     </div>
-                    {email.includes('@') && (
-                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-[10px] font-bold text-amber-700 leading-tight">
-                        <span className="text-amber-800 uppercase block mb-1">Developer Notice:</span>
-                        You are in UI simulation mode. Form submissions will fail with "Invalid Token" errors as this bypass does not grant real API access. Use a real OTP for full functionality.
-                      </div>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      {otpInfo.environment && (
+                        <div className="bg-white rounded-lg p-2 border border-emerald-100">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Environment</p>
+                          <p className="text-xs font-bold text-slate-700 capitalize mt-0.5">{otpInfo.environment}</p>
+                        </div>
+                      )}
+                      {otpInfo.otp_method && (
+                        <div className="bg-white rounded-lg p-2 border border-emerald-100">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">OTP Method</p>
+                          <p className="text-xs font-bold text-slate-700 capitalize mt-0.5">{otpInfo.otp_method}</p>
+                        </div>
+                      )}
+                      {otpInfo.expires_in_minutes && (
+                        <div className="bg-white rounded-lg p-2 border border-orange-100 col-span-2">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Expires In</p>
+                          <p className="text-xs font-bold text-orange-600 mt-0.5">{otpInfo.expires_in_minutes} minutes</p>
+                        </div>
+                      )}
+                    </div>
+                    {otpInfo.otp_method === 'console' && (
+                      <p className="text-[11px] text-amber-700 font-semibold bg-amber-50 border border-amber-200 rounded-lg p-2 mt-1">
+                        ⚠️ Check the server console / backend logs for the OTP code.
+                      </p>
                     )}
                   </div>
                 )}

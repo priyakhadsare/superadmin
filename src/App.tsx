@@ -5,7 +5,6 @@ import SuperAdminDashboard from './components/SuperAdmin/SuperAdminDashboard';
 import CompanyManagement from './components/SuperAdmin/CompanyManagement';
 import SuperAdminManagement from './components/SuperAdmin/SuperAdminManagement';
 import AdminManagement from './components/SuperAdmin/AdminManagement';
-import GlobalUsers from './components/SuperAdmin/GlobalUsers';
 import SubscriptionPlans from './components/SuperAdmin/SubscriptionPlans';
 import GlobalSalaryStructure from './components/SuperAdmin/GlobalSalaryStructure';
 import SuperAdminReports from './components/SuperAdmin/SuperAdminReports';
@@ -49,9 +48,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRole?: string
     return <Navigate to="/login" replace />;
   }
 
-  // Optional: Role-based access control
-  if (allowedRole && user?.role !== allowedRole && user?.name !== 'Darshan Patil' && user?.name !== 'Vipul Patil') {
-    // Note: Temporary bypass for specific names until role field is unified in backend
+  // Role-based access control
+  if (allowedRole && user?.role !== allowedRole) {
     // return <Navigate to="/unauthorized" replace />;
   }
 
@@ -66,7 +64,6 @@ const DashboardLayout: React.FC = () => {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, component: SuperAdminDashboard },
     { id: 'companies', label: 'Companies', icon: Building2, component: CompanyManagement },
     { id: 'branches', label: 'Branches', icon: Store, component: BranchManagement },
-    { id: 'global-users', label: 'Global Users', icon: Users, component: GlobalUsers },
     { id: 'super-admins', label: 'Super Admins', icon: UserCheck, component: SuperAdminManagement },
     { id: 'admins', label: 'Admin Management', icon: ShieldCheck, component: AdminManagement },
     { id: 'subscriptions', label: 'Subscription Plans', icon: CreditCard, component: SubscriptionPlans },
@@ -202,7 +199,7 @@ const DashboardLayout: React.FC = () => {
         </header>
         
         <div className="p-8 max-w-7xl mx-auto w-full">
-          <ActiveComponent />
+          <ActiveComponent onNavigate={(id: string) => setActiveTab(id)} />
         </div>
       </main>
     </div>

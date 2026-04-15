@@ -79,6 +79,13 @@ const AdminManagement: React.FC = () => {
     setListError('');
     try {
       const token = localStorage.getItem('access_token');
+ 
+      if (token === 'dev_bypass_token') {
+        setAdmins([]);
+        setIsLoadingList(false);
+        return;
+      }
+ 
       const response = await fetch('https://testing.staffly.space/super-admin/admins', {
         method: 'GET',
         headers: {
@@ -86,6 +93,7 @@ const AdminManagement: React.FC = () => {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         }
       });
+
       const data = await response.json();
       if (response.ok) {
         setAdmins(Array.isArray(data) ? data : []);
@@ -110,6 +118,13 @@ const AdminManagement: React.FC = () => {
 
     try {
       const token = localStorage.getItem('access_token');
+ 
+      if (token === 'dev_bypass_token') {
+        const admin = admins.find(a => a.user_id === adminId) || admins[0];
+        setViewData(admin);
+        return;
+      }
+ 
       const response = await fetch(`https://testing.staffly.space/super-admin/admins/${adminId}`, {
         method: 'GET',
         headers: {
@@ -203,6 +218,32 @@ const AdminManagement: React.FC = () => {
 
     try {
       const token = localStorage.getItem('access_token');
+ 
+      // Developer Simulation Mode
+      if (token === 'dev_bypass_token') {
+        setTimeout(() => {
+          setIsOpen(false);
+          setEditAdminId(null);
+          const simulatedAdmin = {
+            ...payload,
+            user_id: isEditing ? editAdminId : Math.floor(Math.random() * 1000) + 100,
+            is_active: true,
+            created_at: new Date().toISOString()
+          } as any;
+          if (!isEditing) {
+            setAdmins(prev => [simulatedAdmin, ...prev]);
+          } else {
+            setAdmins(prev => prev.map(a => a.user_id === editAdminId ? { ...a, ...simulatedAdmin } : a));
+          }
+          setFormData({
+            employee_id: '', name: '', email: '', department: '', designation: '', phone: '', address: { flat: '', building: '', area: '', city: '', state: '', pincode: '' }, pan_card: '', aadhar_card: '', gender: 'Male', employee_type: '', shift_type: ''
+          });
+          alert(`Dev Mode: Admin ${isEditing ? 'updated' : 'created'} successfully (Simulated)`);
+          setIsLoading(false);
+        }, 800);
+        return;
+      }
+ 
       const response = await fetch(url, {
         method,
         headers: {
@@ -234,6 +275,14 @@ const AdminManagement: React.FC = () => {
   const handleStatusToggle = async (adminId: number, currentStatus: boolean) => {
     try {
       const token = localStorage.getItem('access_token');
+ 
+      // Developer Simulation Mode
+      if (token === 'dev_bypass_token') {
+        setAdmins(prev => prev.map(a => a.user_id === adminId ? { ...a, is_active: !currentStatus } : a));
+        alert(`Dev Mode: Admin status updated (Simulated)`);
+        return;
+      }
+ 
       const response = await fetch(`https://testing.staffly.space/super-admin/admins/${adminId}/status`, {
         method: 'PATCH',
         headers: {
@@ -268,6 +317,19 @@ const AdminManagement: React.FC = () => {
 
     try {
       const token = localStorage.getItem('access_token');
+ 
+      // Developer Simulation Mode
+      if (token === 'dev_bypass_token') {
+        setTimeout(() => {
+          setIsDeleteDialogOpen(false);
+          setDeleteAdminId(null);
+          setAdmins(prev => prev.filter(a => a.user_id !== deleteAdminId));
+          alert('Dev Mode: Admin deleted successfully (Simulated)');
+          setIsDeleting(false);
+        }, 500);
+        return;
+      }
+ 
       const response = await fetch(`https://testing.staffly.space/super-admin/admins/${deleteAdminId}`, {
         method: 'DELETE',
         headers: {

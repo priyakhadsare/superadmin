@@ -93,6 +93,13 @@ const CompanyManagement: React.FC = () => {
     setIsLoadingList(true);
     try {
       const token = localStorage.getItem('access_token');
+ 
+      // Developer Simulation Mode
+      if (token === 'dev_bypass_token') {
+        setCompanies([]);
+        setIsLoadingList(false);
+        return;
+      }
 
       const queryParams = new URLSearchParams();
       if (includeDeleted !== 'none') queryParams.append('include_deleted', includeDeleted);
@@ -107,6 +114,9 @@ const CompanyManagement: React.FC = () => {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         }
       });
+
+
+
       const data = await response.json();
       if (response.ok) {
         setCompanies(Array.isArray(data) ? data : []);
@@ -142,6 +152,14 @@ const CompanyManagement: React.FC = () => {
     setIsViewModalOpen(true);
     try {
       const token = localStorage.getItem('access_token');
+ 
+      if (token === 'dev_bypass_token') {
+        const company = companies.find(c => c.company_id === companyId) || null;
+        setViewData(company);
+        setIsLoadingView(false);
+        return;
+      }
+ 
       const response = await fetch(`https://testing.staffly.space/companies/${companyId}`, {
         method: 'GET',
         headers: {
@@ -182,6 +200,14 @@ const CompanyManagement: React.FC = () => {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         }
       });
+
+      // Developer Simulation Mode
+      if (token === 'dev_bypass_token') {
+        setBranches([]);
+        setIsLoadingBranches(false);
+        return;
+      }
+
       const data = await response.json();
       if (response.ok) {
         setBranches(Array.isArray(data) ? data : []);
@@ -282,6 +308,15 @@ const CompanyManagement: React.FC = () => {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         }
       });
+ 
+      if (token === 'dev_bypass_token') {
+        setAdmins([
+          { id: 1, name: 'Simulated Admin', email: 'admin@sim.com', status: true },
+          { id: 2, name: 'Backup Admin', email: 'backup@sim.com', status: true }
+        ]);
+        setIsLoadingAdmins(false);
+        return;
+      }
       const data = await response.json();
       if (response.ok) {
         const adminList = Array.isArray(data) ? data : [];
@@ -368,7 +403,20 @@ const CompanyManagement: React.FC = () => {
     setIsSummaryModalOpen(true);
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`https://testing.staffly.space/companies/${companyId}/summary`, {
+ 
+      if (token === 'dev_bypass_token') {
+        setSummaryData({
+          total_branches: 5,
+          active_branches: 4,
+          total_admins: 3,
+          subscription_plan: 'Enterprise',
+          last_active: new Date().toISOString()
+        });
+        setIsLoadingSummary(false);
+        return;
+      }
+ 
+      const response = await fetch(`https://testing.staffly.space/companies/${companyId}/admin-summary`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -420,6 +468,19 @@ const CompanyManagement: React.FC = () => {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         }
       });
+ 
+      if (token === 'dev_bypass_token') {
+        setBranchViewData({
+          branch_id: branchId,
+          branch_name: 'Simulated Branch',
+          branch_email: 'branch@sim.com',
+          contact_number: '0987654321',
+          address: 'Branch Avenue',
+          status: true
+        });
+        setIsLoadingBranchView(false);
+        return;
+      }
       const data = await response.json();
       if (response.ok) {
         setBranchViewData(data);
@@ -498,6 +559,16 @@ const CompanyManagement: React.FC = () => {
 
     try {
       const token = localStorage.getItem('access_token');
+ 
+      // Simulation mode for dev bypass token
+      if (token === 'dev_bypass_token') {
+        setTimeout(() => {
+          setCompanies(prev => prev.filter(c => c.company_id !== companyId));
+          alert('Dev Mode: Company archived successfully (Simulated).');
+        }, 500);
+        return;
+      }
+ 
       const response = await fetch(`https://testing.staffly.space/companies/${companyId}`, {
         method: 'DELETE',
         headers: {
@@ -523,6 +594,13 @@ const CompanyManagement: React.FC = () => {
     try {
       const token = localStorage.getItem('access_token');
       const newStatus = !currentStatus;
+ 
+      // Simulation mode for dev bypass token
+      if (token === 'dev_bypass_token') {
+        setCompanies(prev => prev.map(c => c.company_id === companyId ? { ...c, status: newStatus } : c));
+        alert('Dev Mode: Company status updated (Simulated)');
+        return;
+      }
 
       const response = await fetch(`https://testing.staffly.space/companies/${companyId}/status`, {
         method: 'PATCH',
@@ -560,6 +638,35 @@ const CompanyManagement: React.FC = () => {
     try {
       const token = localStorage.getItem('access_token');
       const isEditing = !!editCompanyId;
+ 
+      // Simulation mode for dev bypass token
+      if (token === 'dev_bypass_token') {
+        setTimeout(() => {
+          setIsModalOpen(false);
+          setEditCompanyId(null);
+          const simulatedCompany = {
+            ...formData,
+            company_id: isEditing ? editCompanyId : Math.floor(Math.random() * 1000) + 100,
+            created_at: new Date().toISOString()
+          } as any;
+ 
+          if (!isEditing) {
+            setCompanies(prev => [simulatedCompany, ...prev]);
+          } else {
+            setCompanies(prev => prev.map(c => c.company_id === editCompanyId ? simulatedCompany : c));
+          }
+ 
+          setFormData({ company_name: '', company_email: '', contact_number: '', address: '', gst_no: '', status: true });
+          alert(`Dev Mode: Company ${isEditing ? 'updated' : 'created'} successfully (Simulated)`);
+          setIsLoading(false);
+ 
+
+ 
+
+        }, 800);
+        return;
+      }
+
       const url = isEditing
         ? `https://testing.staffly.space/companies/${editCompanyId}`
         : 'https://testing.staffly.space/companies';
@@ -577,29 +684,24 @@ const CompanyManagement: React.FC = () => {
         }),
       });
 
-      // Simulation mode for dev bypass token
-      if (token === 'dev_bypass_token') {
-        setTimeout(() => {
-          setIsModalOpen(false);
-          setEditCompanyId(null);
-          const simulatedCompany = {
-            ...formData,
-            company_id: isEditing ? editCompanyId : Math.floor(Math.random() * 1000) + 100,
-            created_at: new Date().toISOString()
-          };
-          
-          if (!isEditing) {
-            setCompanies(prev => [simulatedCompany, ...prev]);
-          } else {
-            setCompanies(prev => prev.map(c => c.company_id === editCompanyId ? simulatedCompany : c));
-          }
-          
-          setFormData({ company_name: '', company_email: '', contact_number: '', address: '', gst_no: '', status: true });
-          alert(`Dev Mode: Company ${isEditing ? 'updated' : 'created'} successfully (Simulated)`);
-          setIsLoading(false);
-        }, 800);
-        return;
-      }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
       const data = await response.json();
 

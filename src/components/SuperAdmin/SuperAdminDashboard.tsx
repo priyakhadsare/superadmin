@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { User, Building2, UserPlus, HandCoins, CalendarDays, FileQuestion } from 'lucide-react';
+import { User, Building2, UserPlus, HandCoins, CalendarDays, Store } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip
 } from 'recharts';
@@ -23,7 +23,11 @@ const dataUsers = [
   { name: 'March', value: 30 },
 ];
 
-const SuperAdminDashboard: React.FC = () => {
+interface DashboardProps {
+  onNavigate?: (id: string) => void;
+}
+
+const SuperAdminDashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [counts, setCounts] = useState({ total: 0, active: 0, inactive: 0 });
   const [adminCounts, setAdminCounts] = useState({ total: 0, active: 0, inactive: 0 });
   const [roleCounts, setRoleCounts] = useState<any>(null);
@@ -33,6 +37,16 @@ const SuperAdminDashboard: React.FC = () => {
     const fetchCounts = async () => {
       try {
         const token = localStorage.getItem('access_token');
+ 
+        // Developer Simulation Mode
+        if (token === 'dev_bypass_token') {
+          setCounts({ total: 0, active: 0, inactive: 0 });
+          setAdminCounts({ total: 0, active: 0, inactive: 0 });
+          setCompanyCounts({ total: 0, active: 0, inactive: 0 });
+          setRoleCounts({});
+          return;
+        }
+ 
         const headers = {
           'Authorization': `Bearer ${token}`
         };
@@ -43,6 +57,8 @@ const SuperAdminDashboard: React.FC = () => {
           fetch('https://testing.staffly.space/companies', { headers }), // Or use a dedicated count endpoint if exists
           fetch('https://testing.staffly.space/super-admin/dashboard/users-by-role-created-by-admin', { headers })
         ]);
+
+
 
         if (saRes.ok) {
           const saData = await saRes.json();
@@ -82,12 +98,12 @@ const SuperAdminDashboard: React.FC = () => {
   ];
 
   const actions = [
-    { name: 'Super Admins', icon: User },
-    { name: 'Companies', icon: Building2 },
-    { name: 'Admin', icon: UserPlus },
-    { name: 'Salary', icon: HandCoins },
-    { name: 'Subscriptions', icon: CalendarDays },
-    { name: 'Enquiries', icon: FileQuestion },
+    { name: 'Super Admins', icon: User, id: 'super-admins' },
+    { name: 'Companies', icon: Building2, id: 'companies' },
+    { name: 'Admin', icon: UserPlus, id: 'admins' },
+    { name: 'Salary', icon: HandCoins, id: 'salary-structure' },
+    { name: 'Subscriptions', icon: CalendarDays, id: 'subscriptions' },
+    { name: 'Branches', icon: Store, id: 'branches' },
   ];
 
   return (
@@ -201,9 +217,9 @@ const SuperAdminDashboard: React.FC = () => {
               <div key={role} className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow group flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <div className={`p-2 rounded-xl group-hover:scale-110 transition-transform ${role === 'Admin' ? 'bg-orange-50 text-orange-600' :
-                      role === 'HR' ? 'bg-indigo-50 text-indigo-600' :
-                        role === 'Manager' ? 'bg-sky-50 text-sky-600' :
-                          role === 'TeamLead' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-600'
+                    role === 'HR' ? 'bg-indigo-50 text-indigo-600' :
+                      role === 'Manager' ? 'bg-sky-50 text-sky-600' :
+                        role === 'TeamLead' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-600'
                     }`}>
                     <User className="h-5 w-5" />
                   </div>
@@ -241,6 +257,7 @@ const SuperAdminDashboard: React.FC = () => {
         {actions.map((action, index) => (
           <button
             key={index}
+            onClick={() => onNavigate?.(action.id)}
             className="flex flex-col items-center justify-center p-4 h-[120px] w-[120px] bg-white border border-slate-300 rounded-3xl shadow-sm hover:shadow-md hover:border-slate-400 transition-all group"
           >
             <action.icon className="h-10 w-10 text-slate-900 mb-3 group-hover:scale-110 transition-transform" strokeWidth={1.5} />
